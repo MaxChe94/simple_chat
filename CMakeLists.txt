@@ -27,17 +27,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 find_package(Qt5 COMPONENTS Widgets REQUIRED)
 find_package(Qt5 REQUIRED COMPONENTS Network)
 
-if(ANDROID)
-  add_library(tcpChat SHARED
-    main.cpp
-    mainwindow.cpp
-    mainwindow.h
-    mainwindow.ui
-    connection.cpp
-    connection.h
-  )
-else()
-  add_executable(tcpChat
+add_executable(tcpChat
     main.cpp
     mainwindow.cpp
     mainwindow.h
@@ -46,8 +36,9 @@ else()
     connection.h
     server.cpp
     server.h
+    client.cpp
+    client.h
   )
-endif()
 
 target_link_libraries(
     tcpChat PRIVATE Qt5::Widgets
