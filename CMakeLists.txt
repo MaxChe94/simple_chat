@@ -38,6 +38,8 @@ add_executable(tcpChat
     server.h
     client.cpp
     client.h
+    chatmessage.cpp
+    chatmessage.h
   )
 
 target_link_libraries(
