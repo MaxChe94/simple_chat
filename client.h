@@ -14,13 +14,14 @@ public:
 
 public slots:
     void slotReadyRead();
-
+    void socketError(QAbstractSocket::SocketError error);
 signals:
     void getMessage(QString msg);
 
 private:
     QTcpSocket *socket;
     QByteArray Data;
+    quint16 blockSize = 0;
 };
 
 #endif // CLIENT_H

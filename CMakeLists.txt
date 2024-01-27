@@ -27,7 +27,9 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 find_package(Qt5 COMPONENTS Widgets REQUIRED)
 find_package(Qt5 REQUIRED COMPONENTS Network)
 
-add_executable(tcpChat
+option(BUILD_FOR_SERVER "Build for server" ON)
+
+add_executable(server
     main.cpp
     mainwindow.cpp
     mainwindow.h
@@ -38,12 +40,35 @@ add_executable(tcpChat
     server.h
     client.cpp
     client.h
-    chatmessage.cpp
-    chatmessage.h
   )
 
+if(BUILD_FOR_SERVER)
+    target_compile_definitions(server PRIVATE BUILD_FOR_SERVER)
+endif()
+
+add_executable(client
+    main.cpp
+    mainwindow.cpp
+    mainwindow.h
+    mainwindow.ui
+    connection.cpp
+    connection.h
+    server.cpp
+    server.h
+    client.cpp
+    client.h
+  )
+
+if(NOT BUILD_FOR_SERVER)
+    target_compile_definitions(client PRIVATE BUILD_FOR_SERVER)
+endif()
+
 target_link_libraries(
-    tcpChat PRIVATE Qt5::Widgets
+    server PRIVATE Qt5::Widgets
     Qt5::Network
     )
 
+target_link_libraries(
+    client PRIVATE Qt5::Widgets
+    Qt5::Network
+    )
