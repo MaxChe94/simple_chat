@@ -4,6 +4,8 @@
 #include <QMainWindow>
 #include <connection.h>
 #include <QDateTime>
+#include <QFile>
+#include <QCloseEvent>
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -20,10 +22,13 @@ public:
 private slots:
     void getMessage(QString msg);
     void on_startBtn_clicked();
-
+    void saveLastSession();
     void on_stopBtn_clicked();
-
+    void getConnectState(int state, QString text = "");
     void on_sendBtn_clicked();
+
+protected:
+    void closeEvent(QCloseEvent *event) override;
 
 private:
     Ui::MainWindow *ui;

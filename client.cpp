@@ -1,13 +1,17 @@
 #include "client.h"
 
-Client::Client(QString ip, int port)
+Client::Client(QString ip, int port, QString name)
 {
    socket = new QTcpSocket(this);
-   /*connect(socket, SIGNAL(errorOccurred(QAbstractSocket::SocketError)),
-              this, SLOT(socketError(QAbstractSocket::SocketError)));*/
-   socket->connectToHost(ip, port);
-   connect(socket, &QTcpSocket::readyRead, this, &Client::slotReadyRead);
-   connect(socket, &QTcpSocket::disconnected, socket, &QTcpSocket::deleteLater);
+   this->ip = ip;
+    this->port = port;
+   this->name = name;
+}
+
+Client::~Client()
+{
+    socket->close();
+    qDebug() << "Client closed";
 }
 
 void Client::sendToServer(QString str)
@@ -20,25 +24,55 @@ void Client::sendToServer(QString str)
     socket->write(Data);
 }
 
+void Client::openConnection()
+{
+    connect(socket, &QTcpSocket::stateChanged, this, [this](QAbstractSocket::SocketState state) {
+        if (state == QAbstractSocket::UnconnectedState) {
+            qDebug() << "Сервер отключился";
+            emit updateConnectState(-1);
+            // Дополнительные действия при отключении сервера
+        }
+    });
+    connect(socket, &QTcpSocket::connected, this, [this](){
+        qDebug() << "Успешно подключено к серверу";
+        emit updateConnectState(1);
+        // Дополнительные действия при успешном подключении
+        sendToServer(name);
+        qDebug() << "Отправка имени пользователя на сервер: " << name;
+    });
+    connect(socket, &QTcpSocket::readyRead, this, &Client::slotReadyRead);
+    connect(socket, &QTcpSocket::disconnected, socket, &QTcpSocket::deleteLater);
+    socket->connectToHost(ip, port);
+
+}
+
 void Client::slotReadyRead()
 {
     QDataStream in(socket);
     if (in.status() == QDataStream::Ok)
     {
         QString str;
-        for (;;){
-            if (blockSize == 0){
-                if (socket->bytesAvailable() < 2){
-                    break;
-                }
-                in >> blockSize;
+            if (!serverNameReceived) {
+                // Это первое сообщение после подключения, которое содержит имя сервера
+                in >> str;
+                serverName = str;
+                serverNameReceived = true;
+                qDebug() << "Connected to server: " << serverName;
+                emit updateConnectState(3, serverName);
+            } else {
+                for (;;){
+                    if (blockSize == 0){
+                        if (socket->bytesAvailable() < 2){
+                            break;
+                        }
+                        in >> blockSize;
+                    }
+                    if (socket->bytesAvailable() < blockSize){
+                        break;
+                    }
+                    in >> str;
+                    blockSize = 0;
             }
-            if (socket->bytesAvailable() < blockSize){
-                break;
-            }
-            in >> str;
-            blockSize = 0;
-            emit Client::getMessage(str);
         }
     }
     else
@@ -46,17 +80,3 @@ void Client::slotReadyRead()
         emit Client::getMessage("ошибка чтения...");
     }
 }
-
-void Client::socketError(QAbstractSocket::SocketError error)
-{
-    if (error == QAbstractSocket::RemoteHostClosedError) {
-        // Сервер отключился
-        qDebug() << "Сервер отключился";
-        // Можно предпринять какие-то действия, например, попытаться переподключиться
-    } else {
-        // Обработка других ошибок
-        qDebug() << "Произошла ошибка: " << socket->errorString();
-    }
-}
-
-

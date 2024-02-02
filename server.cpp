@@ -1,11 +1,19 @@
 #include "server.h"
 
-
-
-
-Server::Server(int port)
+Server::Server(int port, QString name)
 {
-    this->listen(QHostAddress::LocalHost, port);
+    this->port = port;
+    this->name = name;
+}
+
+Server::~Server()
+{
+    for (int i = 0; i < this->clients.size(); i++)
+    {
+        clients[i].socket->close();
+    }
+    this->close();
+    qDebug() << "Server closed";
 }
 
 void Server::SendToClient(QString data)
@@ -15,56 +23,102 @@ void Server::SendToClient(QString data)
     out << quint16(0) << data;
     out.device()->seek(0);
     out << quint16(data.size() - sizeof (quint16));
-    for (int i = 0; i < Sockets.size(); i++){
-        Sockets[i]->write(Data);
+    for (int i = 0; i < clients.size(); i++){
+        clients[i].socket->write(Data);
+    }
+}
+
+void Server::startListen()
+{
+    if (this->listen(QHostAddress::LocalHost, port))
+    {
+        emit this->updateConnectState(0);
+        qDebug() << "Server started";
+    }
+    else
+    {
+        delete this;
     }
 }
 
 void Server::incomingConnection(qintptr socketDescriptor)
 {
-    socket = new QTcpSocket;
+    QTcpSocket *socket = new QTcpSocket;
     socket->setSocketDescriptor(socketDescriptor);
     connect(socket, &QTcpSocket::readyRead, this, &Server::slotReadyRead);
-    connect(socket, &QTcpSocket::disconnected, socket, &QTcpSocket::deleteLater);
-    Sockets.push_back(socket);
-    qDebug() << "client connected";
+    connect(socket, &QTcpSocket::disconnected, this, &Server::clientDisconnected);
+
+    QByteArray requestData = socket->readAll();
+    QString username = QString::fromUtf8(requestData);
+
+    Data.clear();
+    QDataStream out(&Data, QIODevice::WriteOnly);
+    out << name;
+    socket->write(Data);
+//    // Создаем объект ClientInfo и добавляем его в список clients
+//    ClientInfo client;
+//    client.socketDescriptor = socketDescriptor;
+//    client.username = username;
+//    clients.push_back(client);
+
+    //qDebug() << "Client connected: " << username;
+    //emit updateConnectState(1, username);
+    pendingSockets.push_back(socketDescriptor);
 }
 
 void Server::slotReadyRead()
 {
     socket = (QTcpSocket*)sender();
+    QString data;
     QDataStream in(socket);
-    if (in.status() == QDataStream::Ok)
-    {
-        qDebug() << "read...";
-        QString data;
-        for (;;){
-            if (blockSize == 0){
-                if (socket->bytesAvailable() < 2){
-                    break;
-                }
-                in >> blockSize;
-            }
-            if (socket->bytesAvailable() < blockSize){
+    for (;;){
+        if (blockSize == 0){
+            if (socket->bytesAvailable() < 2){
                 break;
             }
+            in >> blockSize;
+        }
+        if (socket->bytesAvailable() < blockSize){
+            break;
+        }
+        in >> data;
+        blockSize = 0;
+        if (pendingSockets.contains(socket->socketDescriptor())) {
+            QByteArray usernameData = socket->readAll().trimmed();
+            qDebug() << "hehehe";
             in >> data;
-            blockSize = 0;
-            emit getMessage(data);
+            ClientInfo client;
+            client.socketDescriptor = socket->socketDescriptor();
+            client.username = data;
+            client.socket = socket;
+            clients.push_back(client);
+                    //qintptr ds = socket->socketDescriptor();
+            pendingSockets.removeOne(socket->socketDescriptor());
+            emit updateConnectState(1, data);
+            }
+            else {
+                emit getMessage(data);
+            }
         }
     }
-    else
-    {
-        emit getMessage("DataStream error");
-    }
-}
 
 void Server::clientDisconnected()
 {
     QTcpSocket *disconnectedSocket = qobject_cast<QTcpSocket*>(sender());
-    if (disconnectedSocket) {
-        Sockets.removeOne(disconnectedSocket);
-        disconnectedSocket->deleteLater();
-        qDebug() << "Клиент отключился";
+    if (!disconnectedSocket) {
+        return;
+    }
+
+    // Находим и удаляем соответствующий элемент из списка clients
+    for (int i = 0; i < clients.size(); ++i) {
+        if (clients[i].socketDescriptor == disconnectedSocket->socketDescriptor()) {
+            qDebug() << "Client disconnected: " << clients[i].username;
+            updateConnectState(2, clients[i].username);
+            clients.remove(i);
+            break;
+        }
+    }
+    if (clients.size() == 0){
+        emit this->updateConnectState(0);
     }
 }

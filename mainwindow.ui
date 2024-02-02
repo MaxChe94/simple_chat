@@ -34,6 +34,12 @@ QPushButton {
 
 QPushButton:hover {
     background-color: #1565C0; /* Измененный цвет фона при наведении */
+    border: 2px solid  rgb(98, 98, 98);
+}
+
+QPushButton::disabled {
+    border: 2px solid #666666; /* Цвет обводки */
+	background-color: rgb(140, 140, 140);
 }
 
 QLineEdit {
@@ -350,7 +356,7 @@ QGroupBox::title {
             </size>
            </property>
            <property name="currentIndex">
-            <number>1</number>
+            <number>0</number>
            </property>
            <widget class="QWidget" name="page_3">
             <layout class="QGridLayout" name="gridLayout_6">
@@ -396,7 +402,7 @@ QGroupBox::title {
                     </sizepolicy>
                    </property>
                    <property name="text">
-                    <string/>
+                    <string>127.0.0.1</string>
                    </property>
                   </widget>
                  </item>

@@ -19,8 +19,12 @@ private:
     Client* client;
     QString name;
 
+public slots:
+    void getConnectState(int state, QString text = "");
+
 signals:
     void messageReceived(QString Data);
+    void gettingNewState(int state, QString text = "");
 };
 
 
