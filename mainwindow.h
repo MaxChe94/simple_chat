@@ -6,6 +6,7 @@
 #include <QDateTime>
 #include <QFile>
 #include <QCloseEvent>
+#include <QTextEdit>
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -30,12 +31,15 @@ private slots:
 protected:
     void closeEvent(QCloseEvent *event) override;
 
+
 private:
     Ui::MainWindow *ui;
     Connection *con;
     int port;
     QString ip;
     QString name;
+    bool isMessageTextEditActive = false;
     QString prependDateTime(const QString& n, const QString& s);
+    void insertNewLine();
 };
 #endif // MAINWINDOW_H

@@ -47,11 +47,6 @@ void Server::incomingConnection(qintptr socketDescriptor)
     socket->setSocketDescriptor(socketDescriptor);
     connect(socket, &QTcpSocket::readyRead, this, &Server::slotReadyRead);
     connect(socket, &QTcpSocket::disconnected, this, &Server::clientDisconnected);
-
-    QByteArray requestData = socket->readAll();
-    QString username = QString::fromUtf8(requestData);
-
-    Data.clear();
     QDataStream out(&Data, QIODevice::WriteOnly);
     out << name;
     socket->write(Data);
@@ -84,9 +79,8 @@ void Server::slotReadyRead()
         in >> data;
         blockSize = 0;
         if (pendingSockets.contains(socket->socketDescriptor())) {
-            QByteArray usernameData = socket->readAll().trimmed();
-            qDebug() << "hehehe";
-            in >> data;
+            //QByteArray usernameData = socket->readAll().trimmed();
+            //in >> data;
             ClientInfo client;
             client.socketDescriptor = socket->socketDescriptor();
             client.username = data;
@@ -110,9 +104,10 @@ void Server::clientDisconnected()
     }
 
     // Находим и удаляем соответствующий элемент из списка clients
-    for (int i = 0; i < clients.size(); ++i) {
-        if (clients[i].socketDescriptor == disconnectedSocket->socketDescriptor()) {
-            qDebug() << "Client disconnected: " << clients[i].username;
+    //qintptr disconDescriptor = disconnectedSocket->socketDescriptor();
+        for (int i = 0; i < clients.size(); ++i) {
+        //if (clients[i].socketDescriptor == disconDescriptor) {
+        if (clients[i].socket == disconnectedSocket) {
             updateConnectState(2, clients[i].username);
             clients.remove(i);
             break;

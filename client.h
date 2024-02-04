@@ -29,6 +29,7 @@ private:
     QString name;
     QString serverName;
     bool serverNameReceived = false;
+    bool close = false;
 };
 
 #endif // CLIENT_H

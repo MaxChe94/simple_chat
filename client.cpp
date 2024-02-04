@@ -10,6 +10,7 @@ Client::Client(QString ip, int port, QString name)
 
 Client::~Client()
 {
+    close = true;
     socket->close();
     qDebug() << "Client closed";
 }
@@ -28,17 +29,14 @@ void Client::openConnection()
 {
     connect(socket, &QTcpSocket::stateChanged, this, [this](QAbstractSocket::SocketState state) {
         if (state == QAbstractSocket::UnconnectedState) {
-            qDebug() << "Сервер отключился";
-            emit updateConnectState(-1);
-            // Дополнительные действия при отключении сервера
+            if (!this->close){
+                emit updateConnectState(4, serverName);
+                // Дополнительные действия при отключении сервера
+            }
         }
     });
     connect(socket, &QTcpSocket::connected, this, [this](){
-        qDebug() << "Успешно подключено к серверу";
-        emit updateConnectState(1);
-        // Дополнительные действия при успешном подключении
         sendToServer(name);
-        qDebug() << "Отправка имени пользователя на сервер: " << name;
     });
     connect(socket, &QTcpSocket::readyRead, this, &Client::slotReadyRead);
     connect(socket, &QTcpSocket::disconnected, socket, &QTcpSocket::deleteLater);
@@ -71,6 +69,7 @@ void Client::slotReadyRead()
                         break;
                     }
                     in >> str;
+                    emit Client::getMessage(str);
                     blockSize = 0;
             }
         }

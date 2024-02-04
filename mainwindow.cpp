@@ -68,17 +68,34 @@ void MainWindow::getConnectState(int state, QString text)
         ui->stopBtn->setDisabled(true);
         ui->sendBtn->setDisabled(true);
         break;
-    case 0:
+    case 0: // соединение открыто, нет собеседников
         ui->startBtn->setDisabled(true);
         ui->stopBtn->setDisabled(false);
         ui->sendBtn->setDisabled(true);
-        //getMessage("Собеседник отключен");
         break;
-    case 1:
+    case 1: // клиент подключился к серверу
         ui->startBtn->setDisabled(true);
         ui->stopBtn->setDisabled(false);
         ui->sendBtn->setDisabled(false);
         getMessage(QString("Клиент %1 подключился").arg(text));
+        break;
+    case 2: // лиент отключился от  сервера
+        ui->startBtn->setDisabled(true);
+        ui->stopBtn->setDisabled(false);
+        ui->sendBtn->setDisabled(false);
+        getMessage(QString("Клиент %1 отключился").arg(text));
+        break;
+    case 3: // подключено к серверу
+        ui->startBtn->setDisabled(true);
+        ui->stopBtn->setDisabled(false);
+        ui->sendBtn->setDisabled(false);
+        getMessage(QString("Подключено к серверу %1").arg(text));
+        break;
+    case 4:
+        ui->startBtn->setDisabled(false);
+        ui->stopBtn->setDisabled(true);
+        ui->sendBtn->setDisabled(true);
+        getMessage(QString("Сервер %1 отключился").arg(text));
         break;
     default:
         break;
@@ -91,6 +108,13 @@ void MainWindow::on_sendBtn_clicked()
     con->sendMsg(text);
     ui->message->clear();
     ui->history->append(text);
+}
+
+void MainWindow::insertNewLine()
+{
+    if (ui->message->hasFocus()) {
+            ui->message->insertPlainText("\n");
+        }
 }
 
 QString MainWindow::prependDateTime(const QString& n, const QString& s) {
@@ -117,3 +141,4 @@ void MainWindow::closeEvent(QCloseEvent *event)
     }
     QMainWindow::closeEvent(event);
 }
+
