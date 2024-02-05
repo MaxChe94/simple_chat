@@ -2,10 +2,12 @@
 #include "./ui_mainwindow.h"
 #include <QDebug>
 
+extern bool server_mode;
+
 #ifdef BUILD_FOR_SERVER
-const bool isServer = false;
-#else
 const bool isServer = true;
+#else
+const bool isServer = false;
 #endif
 
 MainWindow::MainWindow(QWidget *parent)
@@ -13,6 +15,7 @@ MainWindow::MainWindow(QWidget *parent)
     , ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
+    ui->message->installEventFilter(this);
     getConnectState(-1);
     if (isServer)
     {
@@ -104,10 +107,13 @@ void MainWindow::getConnectState(int state, QString text)
 
 void MainWindow::on_sendBtn_clicked()
 {
-    QString text = prependDateTime(name, ui->message->toPlainText());
-    con->sendMsg(text);
-    ui->message->clear();
-    ui->history->append(text);
+    if (ui->sendBtn->isEnabled())
+    {
+        QString text = prependDateTime(name, ui->message->toPlainText());
+        con->sendMsg(text);
+        ui->message->clear();
+        ui->history->append(text);
+    }
 }
 
 void MainWindow::insertNewLine()
@@ -142,3 +148,16 @@ void MainWindow::closeEvent(QCloseEvent *event)
     QMainWindow::closeEvent(event);
 }
 
+bool MainWindow::eventFilter(QObject *obj, QEvent *event)
+{
+    if (obj == ui->message && event->type() == QEvent::KeyPress) {
+        QKeyEvent *keyEvent = static_cast<QKeyEvent*>(event);
+        if (keyEvent->key() == Qt::Key_Return && keyEvent->modifiers() == Qt::NoModifier) {
+            // Нажата клавиша Enter без модификаторов
+            on_sendBtn_clicked(); // Вызываем слот отправки сообщения
+            return true; // Мы обработали событие, больше ничего не нужно делать
+        }
+    }
+    // Если мы не обработали событие, передаем его дальше по цепочке обработки
+    return QObject::eventFilter(obj, event);
+}
